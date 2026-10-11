@@ -59,7 +59,7 @@
         <i class="fa-solid fa-file-shield text-blue-600"></i> Generador de Planes de Mejoramiento
       </h2>
       <p class="text-slate-600 text-sm leading-relaxed">
-        Adjunta el archivo Excel o CSV con las notas del curso. La aplicación filtrará automáticamente a los estudiantes reprobados por periodo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">&lt; 33 puntos</code>) o con actividades pendientes (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">nota 0 o vacía</code>) y generará un único documento Word consolidado con los planes de mejoramiento de todo el curso.
+        Adjunta el archivo Excel o CSV con las notas del curso. La aplicación validará las columnas de definitiva (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">&lt; 33 puntos</code>) y extraerá todas las actividades pendientes (nota 0, vacías o sin calificar) clasificándolas por periodo según su numeración (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">1.x</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">2.x</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">3.x</code>).
       </p>
     </div>
 
@@ -87,7 +87,6 @@
         </label>
         
         <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/50 hover:bg-blue-50/20 rounded-2xl p-8 text-center transition cursor-pointer group relative">
-          <!-- Input oculto pero totalmente funcional -->
           <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
           
           <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
@@ -122,6 +121,12 @@
       <!-- Mensaje de Estado / Feedback -->
       <div id="statusMessage" class="hidden p-4 rounded-xl text-sm font-semibold flex items-center gap-3"></div>
 
+      <!-- Panel de depuración / diagnóstico -->
+      <div id="debugPanel" class="hidden bg-slate-900 text-slate-200 p-4 rounded-xl text-xs font-mono max-h-48 overflow-y-auto space-y-1">
+        <p class="font-bold text-emerald-400">--- Panel de Diagnóstico ---</p>
+        <div id="debugContent"></div>
+      </div>
+
     </div>
 
     <!-- Notas Informativas -->
@@ -129,9 +134,9 @@
       <h4 class="font-bold text-blue-900 text-sm mb-1.5 flex items-center gap-2">
         <i class="fa-solid fa-circle-info text-blue-700"></i> Criterios del sistema:
       </h4>
-      <p>• <strong>Asignación por Periodo:</strong> Las actividades se clasifican automáticamente según su numeración inicial (<code class="font-bold">1.x</code> = Periodo 1, <code class="font-bold">2.x</code> = Periodo 2, <code class="font-bold">3.x</code> = Periodo 3).</p>
-      <p>• <strong>Condición de Reprobación:</strong> Aplica cuando la definitiva del periodo es menor a 33 puntos o cuando la tarea aparece con nota cero o vacía.</p>
-      <p>• <strong>Plataforma Institucional:</strong> Cada plan de mejoramiento incluirá la instrucción de ingreso a <code class="font-bold text-blue-800">tecnotic.milaulas.com</code>.</p>
+      <p>• <strong>Definitivas evaluadas:</strong> Estudiante con definitiva menor a 33 puntos en periodo 1 o 2 (o periodo 3 con definitiva registrada) se clasifica automáticamente como reprobado.</p>
+      <p>• <strong>Asignación por Periodo:</strong> Las tareas con nota cero o vacías se agrupan en su respectivo periodo según su prefijo (<code class="font-bold">1.x</code>, <code class="font-bold">2.x</code>, <code class="font-bold">3.x</code>).</p>
+      <p>• <strong>Plataforma Institucional:</strong> Se incluye la instrucción de acceso a <code class="font-bold text-blue-800">tecnotic.milaulas.com</code>.</p>
     </div>
 
   </main>
@@ -143,7 +148,6 @@
   </footer>
 
   <script>
-    // Fecha actual por defecto
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('deliveryDate').value = today;
 
@@ -152,6 +156,8 @@
     const fileNameText = document.getElementById('fileNameText');
     const btnGenerate = document.getElementById('btnGenerate');
     const statusMessage = document.getElementById('statusMessage');
+    const debugPanel = document.getElementById('debugPanel');
+    const debugContent = document.getElementById('debugContent');
 
     let loadedWorkbook = null;
 
@@ -191,7 +197,11 @@
       }
     }
 
-    // Limpieza de Título de Tarea (Remueve "(Real)" y espacios residuales)
+    function logDebug(text) {
+      debugPanel.classList.remove('hidden');
+      debugContent.innerHTML += `<div>${text}</div>`;
+    }
+
     function cleanTaskTitle(title) {
       if (!title) return '';
       return title
@@ -200,42 +210,41 @@
         .trim();
     }
 
-    // Extracción limpia del Nombre del Estudiante (Remueve número de lista, curso y años)
     function cleanStudentName(rawName) {
       if (!rawName) return '';
       let clean = String(rawName).trim();
-      
-      // Remover números ordinales/lista iniciales (ej: "26 Yenderli", "1 - Carlos")
       clean = clean.replace(/^\d+[\.\s\-\)]*/, '');
-      
-      // Remover años (2024, 2025, 2026, etc.)
       clean = clean.replace(/20\d\d/g, '');
-
-      // Remover menciones de curso o grado (ej: "602", "901")
       clean = clean.replace(/\b(curso|grado)?\s*\d{3,4}\b/gi, '');
-
       return clean.replace(/\s+/g, ' ').trim();
     }
 
-    // Extracción del Nombre del Curso
     function extractCourse(rawName) {
       if (!rawName) return '602';
       const match = String(rawName).match(/\b(\d{3})\b/);
       return match ? match[1] : '602';
     }
 
-    // Determinar si una nota está vacía o es 0
-    function isPendingGrade(val) {
-      if (val === null || val === undefined) return true;
+    // Conversión robusta de nota a número (soporta puntos, comas y textos)
+    function parseGrade(val) {
+      if (val === null || val === undefined) return null;
       const strVal = String(val).trim();
-      if (strVal === '' || strVal === '-' || strVal === '0') return true;
-      const numVal = parseFloat(strVal);
-      return isNaN(numVal) || numVal === 0;
+      if (strVal === '' || strVal === '-' || strVal === 'N/A') return null;
+      // Reemplazar coma por punto decimal si aplica
+      const cleanNumStr = strVal.replace(',', '.');
+      const num = parseFloat(cleanNumStr);
+      return isNaN(num) ? null : num;
     }
 
-    // Generar documento Word
+    function isPendingGrade(val) {
+      const num = parseGrade(val);
+      if (num === null || num === 0) return true;
+      return false;
+    }
+
     btnGenerate.addEventListener('click', async () => {
       if (!loadedWorkbook) return;
+      debugContent.innerHTML = '';
 
       const deliveryDate = document.getElementById('deliveryDate').value || today;
       const sheetName = loadedWorkbook.SheetNames[0];
@@ -256,7 +265,10 @@
       if (colNombreIdx === -1) colNombreIdx = 0;
       if (colApellidoIdx === -1) colApellidoIdx = 1;
 
-      // Clasificar tareas y definitivas por periodo
+      logDebug(`Columna Nombre detectada en índice: ${colNombreIdx} (${headers[colNombreIdx]})`);
+      logDebug(`Columna Apellido detectada en índice: ${colApellidoIdx} (${headers[colApellidoIdx]})`);
+
+      // Mapear Columnas de Tareas y Definitivas
       const periodTasks = { 1: [], 2: [], 3: [] };
       const periodDefinitivas = { 1: -1, 2: -1, 3: -1 };
 
@@ -265,9 +277,16 @@
         const cleanHeader = cleanTaskTitle(header);
 
         if (/definitiva/i.test(cleanHeader)) {
-          if (/^1[\.\s]/i.test(cleanHeader) || /primer/i.test(cleanHeader)) periodDefinitivas[1] = index;
-          else if (/^2[\.\s]/i.test(cleanHeader) || /segund/i.test(cleanHeader)) periodDefinitivas[2] = index;
-          else if (/^3[\.\s]/i.test(cleanHeader) || /tercer/i.test(cleanHeader)) periodDefinitivas[3] = index;
+          if (/^1[\.\s]/i.test(cleanHeader) || /primer/i.test(cleanHeader)) {
+            periodDefinitivas[1] = index;
+            logDebug(`-> Definitiva Periodo 1 en columna: "${cleanHeader}" (idx ${index})`);
+          } else if (/^2[\.\s]/i.test(cleanHeader) || /segund/i.test(cleanHeader)) {
+            periodDefinitivas[2] = index;
+            logDebug(`-> Definitiva Periodo 2 en columna: "${cleanHeader}" (idx ${index})`);
+          } else if (/^3[\.\s]/i.test(cleanHeader) || /tercer/i.test(cleanHeader)) {
+            periodDefinitivas[3] = index;
+            logDebug(`-> Definitiva Periodo 3 en columna: "${cleanHeader}" (idx ${index})`);
+          }
           return;
         }
 
@@ -282,7 +301,7 @@
 
       const studentsData = [];
 
-      rows.forEach(row => {
+      rows.forEach((row, rIdx) => {
         const rawNombre = row[colNombreIdx];
         const rawApellido = row[colApellidoIdx];
 
@@ -294,45 +313,53 @@
 
         if (!nombreLimpio && !apellidosLimpios) return;
 
-        // Periodo 1
-        let defP1 = null;
-        if (periodDefinitivas[1] !== -1 && row[periodDefinitivas[1]] !== undefined) {
-          defP1 = parseFloat(row[periodDefinitivas[1]]);
-        }
+        // Evaluar Periodo 1
+        let defP1 = periodDefinitivas[1] !== -1 ? parseGrade(row[periodDefinitivas[1]]) : null;
         const pendingP1 = [];
-        if (defP1 === null || isNaN(defP1) || defP1 < 33) {
-          periodTasks[1].forEach(t => {
-            if (isPendingGrade(row[t.index])) pendingP1.push(t.title);
-          });
-        }
+        // Si la definitiva es < 33 (o no existe pero hay tareas pendientes)
+        const reprobadoP1 = (defP1 !== null && defP1 < 33);
+        
+        periodTasks[1].forEach(t => {
+          if (reprobadoP1 || isPendingGrade(row[t.index])) {
+            // Solo añadir si la nota de esa tarea es pendiente/cero
+            if (isPendingGrade(row[t.index])) {
+              pendingP1.push(t.title);
+            }
+          }
+        });
 
-        // Periodo 2
-        let defP2 = null;
-        if (periodDefinitivas[2] !== -1 && row[periodDefinitivas[2]] !== undefined) {
-          defP2 = parseFloat(row[periodDefinitivas[2]]);
-        }
+        // Evaluar Periodo 2
+        let defP2 = periodDefinitivas[2] !== -1 ? parseGrade(row[periodDefinitivas[2]]) : null;
         const pendingP2 = [];
-        if (defP2 === null || isNaN(defP2) || defP2 < 33) {
-          periodTasks[2].forEach(t => {
-            if (isPendingGrade(row[t.index])) pendingP2.push(t.title);
-          });
-        }
+        const reprobadoP2 = (defP2 !== null && defP2 < 33);
 
-        // Periodo 3
-        let defP3 = null;
-        if (periodDefinitivas[3] !== -1 && row[periodDefinitivas[3]] !== undefined) {
-          defP3 = parseFloat(row[periodDefinitivas[3]]);
-        }
+        periodTasks[2].forEach(t => {
+          if (reprobadoP2 || isPendingGrade(row[t.index])) {
+            if (isPendingGrade(row[t.index])) {
+              pendingP2.push(t.title);
+            }
+          }
+        });
+
+        // Evaluar Periodo 3
+        let defP3 = periodDefinitivas[3] !== -1 ? parseGrade(row[periodDefinitivas[3]]) : null;
         const pendingP3 = [];
-        if (defP3 === null || isNaN(defP3) || defP3 < 33) {
-          periodTasks[3].forEach(t => {
-            if (isPendingGrade(row[t.index])) pendingP3.push(t.title);
-          });
-        }
+        const reprobadoP3 = (defP3 !== null && defP3 < 33);
 
+        periodTasks[3].forEach(t => {
+          // Si no hay definitiva P3 aún, o si la definitiva es < 33
+          if (defP3 === null || reprobadoP3 || isPendingGrade(row[t.index])) {
+            if (isPendingGrade(row[t.index])) {
+              pendingP3.push(t.title);
+            }
+          }
+        });
+
+        // El estudiante se incluye si reprobó algún periodo O tiene tareas pendientes
+        const hasReprobado = (reprobadoP1 || reprobadoP2 || reprobadoP3);
         const totalPending = pendingP1.length + pendingP2.length + pendingP3.length;
 
-        if (totalPending > 0) {
+        if (hasReprobado || totalPending > 0) {
           studentsData.push({
             curso,
             nombre: nombreLimpio,
@@ -341,11 +368,12 @@
             pendingP2,
             pendingP3
           });
+          logDebug(`Estudiante incluido: ${nombreLimpio} ${apellidosLimpios} (Def P1: ${defP1}, Def P2: ${defP2} | Pendientes P1:${pendingP1.length}, P2:${pendingP2.length}, P3:${pendingP3.length})`);
         }
       });
 
       if (studentsData.length === 0) {
-        showStatus('No se encontraron estudiantes reprobados ni con tareas pendientes en el archivo.', 'warning');
+        showStatus('No se encontraron estudiantes reprobados ni con tareas pendientes según los criterios.', 'warning');
         return;
       }
 
@@ -408,7 +436,6 @@
               ],
               spaceAfter: 120
             }),
-            // Instrucción de plataforma obligatoria
             new Paragraph({
               children: [
                 new TextRun({ 
