@@ -32,7 +32,7 @@
         <div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 md:p-8">
             <h2 class="text-xl font-semibold text-slate-900 mb-2">Generador de Planes de Mejoramiento</h2>
             <p class="text-slate-600 text-sm mb-6">
-                Cargue el archivo de notas (Excel o CSV). La aplicación detectará automáticamente las columnas definitivas (incluso formatos como <em>"Tarea:1.7. Definitiva..."</em> o <em>"Tarea:2.8. Definitiva (Real)"</em>), evaluará los periodos reprobados (&lt; 33 puntos) o con actividades en cero/vacías, y generará un único documento Word consolidado con los planes de mejoramiento de todo el curso.
+                Cargue el archivo Excel o CSV de notas. La aplicación buscará las columnas definitivas (ej. <em>"Tarea:1.7. Definitiva..."</em> o <em>"Tarea:2.8. Definitiva (Real)"</em>), evaluará los periodos con nota &lt; 33 puntos o con actividades en cero/vacías, y generará un documento Word consolidado. Se omitirá el término "(Real)" de las tareas y se depurará el curso del nombre del estudiante.
             </p>
 
             <!-- Panel de Controles -->
@@ -191,7 +191,7 @@
                     } else if (hLower.includes('apellido')) {
                         colApellidosKey = h;
                     } else {
-                        // Búsqueda flexible de definitivas
+                        // Búsqueda flexible de definitivas (ej. 1.7. Definitiva, 2.8. Definitiva (Real))
                         if (hLower.includes('definitiva') || hLower.includes('def.')) {
                             if (h.startsWith('1.') || hLower.includes('1.')) colP1Def = h;
                             else if (h.startsWith('2.') || hLower.includes('2.')) colP2Def = h;
@@ -229,8 +229,38 @@
                     return sum;
                 };
 
+                // Función para limpiar el nombre de tareas (quitar "(Real)" y limpiar espacios extras)
+                const cleanTaskTitle = (title) => {
+                    if (!title) return "";
+                    return title.replace(/\(Real\)/gi, "").replace(/\s+/g, " ").trim();
+                };
+
+                // Función para extraer curso y nombre limpio del campo nombre
+                const parseStudentNameAndCourse = (rawName) => {
+                    if (!rawName) return { curso: "No especificado", nombreLimpio: "" };
+                    let str = rawName.toString().trim();
+                    let curso = "No especificado";
+                    let nombreLimpio = str;
+
+                    // Patrones comunes de cursos (ej: 601, 602, 701, 601-Jornada, etc.)
+                    const courseMatch = str.match(/^([0-9]{3,4})\s*[-–]?\s*(.*)$/);
+                    if (courseMatch) {
+                        curso = courseMatch[1];
+                        nombreLimpio = courseMatch[2].trim();
+                    } else {
+                        // Buscar si el curso está al final o entre corchetes/paréntesis
+                        const altMatch = str.match(/^(.*?)\s*[\(\[-]([0-9]{3,4})[\)\]]?\s*$/);
+                        if (altMatch) {
+                            nombreLimpio = altMatch[1].trim();
+                            curso = altMatch[2];
+                        }
+                    }
+                    return { curso, nombreLimpio };
+                };
+
                 parsedData.forEach((row, index) => {
-                    const nombreEstudiante = row[colNombreKey] || `Estudiante ${index + 1}`;
+                    const rawNameVal = row[colNombreKey] || `Estudiante ${index + 1}`;
+                    const { curso, nombreLimpio } = parseStudentNameAndCourse(rawNameVal);
                     const apellidosEstudiante = row[colApellidosKey] || "";
 
                     // Calcular o extraer definitiva Periodo 1
@@ -257,8 +287,7 @@
                     const pendingP2 = p2Activities.filter(act => isPending(row[act]));
                     const pendingP3 = p3Activities.filter(act => isPending(row[act]));
 
-                    // Criterio estricto de reprobación / necesidad de mejoramiento:
-                    // Reprobado si definitiva < 33 o si tiene actividades pendientes (0 o vacías)
+                    // Criterio estricto: Reprobado si definitiva < 33 o si tiene actividades pendientes (0 o vacías)
                     const p1Reprobado = (p1DefVal < 33) || (pendingP1.length > 0);
                     const p2Reprobado = (p2DefVal < 33) || (pendingP2.length > 0);
 
@@ -274,7 +303,7 @@
 
                     if (needsImprovementPlan) {
                         estudiantesConMejoramiento++;
-                        logDetails += `• ${nombreEstudiante} ${apellidosEstudiante}: P1(${p1DefVal}), P2(${p2DefVal}) -> Pendientes: P1(${pendingP1.length}), P2(${pendingP2.length}), P3(${pendingP3.length})<br>`;
+                        logDetails += `• ${nombreLimpio} ${apellidosEstudiante} (${curso}): P1(${p1DefVal}), P2(${p2DefVal}) -> Pendientes: P1(${pendingP1.length}), P2(${pendingP2.length}), P3(${pendingP3.length})<br>`;
 
                         const childrenElements = [
                             new docx.Paragraph({
@@ -300,14 +329,14 @@
                             new docx.Paragraph({
                                 children: [
                                     new docx.TextRun({ text: "Curso: ", bold: true }),
-                                    new docx.TextRun(nombreEstudiante.toString().split(' ')[0] || "No especificado")
+                                    new docx.TextRun(curso)
                                 ],
                                 spacing: { after: 100 }
                             }),
                             new docx.Paragraph({
                                 children: [
                                     new docx.TextRun({ text: "Nombre: ", bold: true }),
-                                    new docx.TextRun(nombreEstudiante.toString())
+                                    new docx.TextRun(nombreLimpio)
                                 ],
                                 spacing: { after: 100 }
                             }),
@@ -342,8 +371,9 @@
                                 spacing: { before: 200, after: 100 }
                             }));
                             pendingP1.forEach(act => {
+                                const cleanActName = cleanTaskTitle(act);
                                 childrenElements.push(new docx.Paragraph({
-                                    text: `• ${act}`,
+                                    text: `• ${cleanActName}`,
                                     bullet: { level: 0 },
                                     spacing: { after: 60 }
                                 }));
@@ -358,8 +388,9 @@
                                 spacing: { before: 200, after: 100 }
                             }));
                             pendingP2.forEach(act => {
+                                const cleanActName = cleanTaskTitle(act);
                                 childrenElements.push(new docx.Paragraph({
-                                    text: `• ${act}`,
+                                    text: `• ${cleanActName}`,
                                     bullet: { level: 0 },
                                     spacing: { after: 60 }
                                 }));
@@ -374,8 +405,9 @@
                                 spacing: { before: 200, after: 100 }
                             }));
                             pendingP3.forEach(act => {
+                                const cleanActName = cleanTaskTitle(act);
                                 childrenElements.push(new docx.Paragraph({
-                                    text: `• ${act}`,
+                                    text: `• ${cleanActName}`,
                                     bullet: { level: 0 },
                                     spacing: { after: 60 }
                                 }));
