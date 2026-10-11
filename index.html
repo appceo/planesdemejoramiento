@@ -32,7 +32,7 @@
         <div class="bg-white rounded-xl shadow-lg border border-slate-100 p-6 md:p-8">
             <h2 class="text-xl font-semibold text-slate-900 mb-2">Generador de Planes de Mejoramiento</h2>
             <p class="text-slate-600 text-sm mb-6">
-                Cargue el archivo Excel o CSV de notas. La aplicación buscará las columnas definitivas (ej. <em>"Tarea:1.7. Definitiva..."</em> o <em>"Tarea:2.8. Definitiva (Real)"</em>), evaluará los periodos con nota &lt; 33 puntos o con actividades en cero/vacías, y generará un documento Word consolidado. Se omitirá el término "(Real)" de las tareas y se depurará el curso del nombre del estudiante.
+                Cargue el archivo Excel o CSV de notas. La aplicación clasificará automáticamente cada actividad según su número ordinal prefijo (1. = Periodo 1, 2. = Periodo 2, 3. = Periodo 3), evaluará las notas definitivas (&lt; 33 puntos) o actividades pendientes (en cero o vacías), y generará un documento Word consolidado.
             </p>
 
             <!-- Panel de Controles -->
@@ -119,16 +119,18 @@
                     statusMessage.textContent = `Archivo cargado con éxito (${json.length} registros encontrados).`;
                     resultsContainer.classList.remove('hidden');
                     
-                    // Análisis de columnas para depuración
+                    // Análisis de columnas para depuración estrictamente por prefijo numérico
                     let p1Acts = 0, p2Acts = 0, p3Acts = 0;
                     let defsFound = [];
                     headersList.forEach(h => {
-                        let hl = h.toLowerCase();
+                        let hl = h.toLowerCase().trim();
                         if (hl.includes('definitiva') || hl.includes('def.')) {
                             defsFound.push(h);
-                        } else if (h.startsWith('1.') || hl.includes('1.')) p1Acts++;
-                        else if (h.startsWith('2.') || hl.includes('2.')) p2Acts++;
-                        else if (h.startsWith('3.') || hl.includes('3.')) p3Acts++;
+                        }
+                        
+                        if (/^1\./.test(hl) || h.startsWith('1.')) p1Acts++;
+                        else if (/^2\./.test(hl) || h.startsWith('2.')) p2Acts++;
+                        else if (/^3\./.test(hl) || h.startsWith('3.')) p3Acts++;
                     });
 
                     summaryStats.innerHTML = `
@@ -139,7 +141,7 @@
 
                     debugLog.innerHTML = `[OK] Columnas detectadas: ${headersList.join(', ')}<br>` +
                                          `[OK] Definitivas halladas: ${defsFound.length > 0 ? defsFound.join(', ') : 'Ninguna'}<br>` +
-                                         `[INFO] Actividades periodo 1: ${p1Acts} | Periodo 2: ${p2Acts} | Periodo 3: ${p3Acts}`;
+                                         `[INFO] Actividades periodo 1 (1.*): ${p1Acts} | Periodo 2 (2.*): ${p2Acts} | Periodo 3 (3.*): ${p3Acts}`;
 
                 } catch (err) {
                     console.error(err);
@@ -164,7 +166,6 @@
             statusMessage.textContent = "Generando documento Word consolidado...";
 
             try {
-                // Verificar disponibilidad de docx
                 if (typeof docx === 'undefined') {
                     throw new Error("La librería docx no se ha cargado correctamente.");
                 }
@@ -173,7 +174,7 @@
                 let estudiantesConMejoramiento = 0;
                 let logDetails = "";
 
-                // Clasificación detallada de columnas
+                // Clasificación estricta por prefijo numérico de actividad (1. = P1, 2. = P2, 3. = P3)
                 const p1Activities = [];
                 const p2Activities = [];
                 const p3Activities = [];
@@ -191,19 +192,20 @@
                     } else if (hLower.includes('apellido')) {
                         colApellidosKey = h;
                     } else {
-                        // Búsqueda flexible de definitivas (ej. 1.7. Definitiva, 2.8. Definitiva (Real))
+                        // Búsqueda de definitivas
                         if (hLower.includes('definitiva') || hLower.includes('def.')) {
-                            if (h.startsWith('1.') || hLower.includes('1.')) colP1Def = h;
-                            else if (h.startsWith('2.') || hLower.includes('2.')) colP2Def = h;
-                            else if (h.startsWith('3.') || hLower.includes('3.')) colP3Def = h;
+                            if (/^1\./.test(hLower) || h.startsWith('1.') || hLower.includes('1.')) colP1Def = h;
+                            else if (/^2\./.test(hLower) || h.startsWith('2.') || hLower.includes('2.')) colP2Def = h;
+                            else if (/^3\./.test(hLower) || h.startsWith('3.') || hLower.includes('3.')) colP3Def = h;
                         }
                         
-                        // Clasificación de actividades por periodo
-                        if ((h.startsWith('1.') || hLower.includes('1.')) && !hLower.includes('def')) {
+                        // Clasificación estricta por prefijo numérico de periodo para todas las tareas
+                        const cleanH = h.trim();
+                        if (/^1\./.test(cleanH) && !hLower.includes('def')) {
                             p1Activities.push(h);
-                        } else if ((h.startsWith('2.') || hLower.includes('2.')) && !hLower.includes('def')) {
+                        } else if (/^2\./.test(cleanH) && !hLower.includes('def')) {
                             p2Activities.push(h);
-                        } else if ((h.startsWith('3.') || hLower.includes('3.')) && !hLower.includes('def')) {
+                        } else if (/^3\./.test(cleanH) && !hLower.includes('def')) {
                             p3Activities.push(h);
                         }
                     }
@@ -212,14 +214,12 @@
                 if (!colNombreKey) colNombreKey = headersList.find(h => h.toLowerCase().includes('nom')) || headersList[0];
                 if (!colApellidosKey) colApellidosKey = headersList.find(h => h.toLowerCase().includes('apell')) || headersList[1];
 
-                // Función auxiliar para verificar si una nota representa actividad pendiente (vacía o cero)
                 const isPending = (val) => {
                     if (val === undefined || val === null || val === "") return true;
                     const num = Number(val);
                     return isNaN(num) || num === 0;
                 };
 
-                // Función auxiliar para sumar notas de un grupo de actividades
                 const sumPeriodNotes = (row, activities) => {
                     let sum = 0;
                     activities.forEach(act => {
@@ -229,27 +229,25 @@
                     return sum;
                 };
 
-                // Función para limpiar el nombre de tareas (quitar "(Real)" y limpiar espacios extras)
                 const cleanTaskTitle = (title) => {
                     if (!title) return "";
                     return title.replace(/\(Real\)/gi, "").replace(/\s+/g, " ").trim();
                 };
 
-                // Función para extraer curso, año y nombre limpio del campo nombre
+                // Función depurada para extraer curso, nombre limpio (sin años ni números de lista)
                 const parseStudentNameAndCourse = (rawName) => {
                     if (!rawName) return { curso: "No especificado", nombreLimpio: "" };
                     let str = rawName.toString().trim();
                     let curso = "No especificado";
                     let nombreLimpio = str;
 
-                    // Patrón común en listas (ej: "602 26 Yenderli Valentina" o "601 - 5 Juan")
-                    // Extraer curso inicial de 3 o 4 dígitos
+                    // Patrón 1: Curso inicial de 3 o 4 dígitos (ej: "602 26 Yenderli Valentina")
                     const courseMatch = str.match(/^([0-9]{3,4})\s*[-–]?\s*(.*)$/);
                     if (courseMatch) {
                         curso = courseMatch[1];
                         nombreLimpio = courseMatch[2].trim();
                     } else {
-                        // Buscar si el curso está al final o entre corchetes/paréntesis
+                        // Patrón 2: Curso al final (ej: "Yenderli (602)")
                         const altMatch = str.match(/^(.*?)\s*[\(\[-]([0-9]{3,4})[\)\]]?\s*$/);
                         if (altMatch) {
                             nombreLimpio = altMatch[1].trim();
@@ -257,11 +255,14 @@
                         }
                     }
 
-                    // Remover número de lista o año inicial que haya quedado remanente (ej. número de orden "26 " o años "2024", "2025", "2026")
-                    // Se remueve cualquier número al inicio que sea un número de lista o año (1 a 3 dígitos o 202X) seguido de espacios
-                    nombreLimpio = nombreLimpio.replace(/^(?:[0-9]{1,3}|202[4-6])\s+/, "").trim();
+                    // Remover número de lista inicial (ej: "26 ") y/o años lectivos (ej: "2024", "2025", "2026")
+                    // Se aplica de forma repetitiva hasta limpiar completamente remanentes numéricos al inicio
+                    let prev;
+                    do {
+                        prev = nombreLimpio;
+                        nombreLimpio = nombreLimpio.replace(/^(?:[0-9]{1,3}|202[4-6])\s+/, "").trim();
+                    } while (nombreLimpio !== prev);
 
-                    // Limpieza final de espacios dobles
                     nombreLimpio = nombreLimpio.replace(/\s+/g, " ").trim();
                     return { curso, nombreLimpio };
                 };
@@ -295,7 +296,7 @@
                     const pendingP2 = p2Activities.filter(act => isPending(row[act]));
                     const pendingP3 = p3Activities.filter(act => isPending(row[act]));
 
-                    // Criterio estricto: Reprobado si definitiva < 33 o si tiene actividades pendientes (0 o vacías)
+                    // Criterios de reprobación por periodo (< 33 puntos o tareas pendientes)
                     const p1Reprobado = (p1DefVal < 33) || (pendingP1.length > 0);
                     const p2Reprobado = (p2DefVal < 33) || (pendingP2.length > 0);
 
@@ -311,7 +312,7 @@
 
                     if (needsImprovementPlan) {
                         estudiantesConMejoramiento++;
-                        logDetails += `• ${nombreLimpio} ${apellidosEstudiante} (${curso}): P1(${p1DefVal}), P2(${p2DefVal}) -> Pendientes: P1(${pendingP1.length}), P2(${pendingP2.length}), P3(${pendingP3.length})<br>`;
+                        logDetails += `• ${nombreLimpio} ${apellidosEstudiante} (${curso}): P1(def:${p1DefVal}, pend:${pendingP1.length}), P2(def:${p2DefVal}, pend:${pendingP2.length}), P3(pend:${pendingP3.length})<br>`;
 
                         const childrenElements = [
                             new docx.Paragraph({
@@ -377,7 +378,7 @@
                             })
                         ];
 
-                        // Primer Periodo
+                        // Primer Periodo (Tareas que comienzan con 1.)
                         if (p1Reprobado && pendingP1.length > 0) {
                             childrenElements.push(new docx.Paragraph({
                                 text: "Primer Periodo",
@@ -394,7 +395,7 @@
                             });
                         }
 
-                        // Segundo Periodo
+                        // Segundo Periodo (Tareas que comienzan con 2.)
                         if (p2Reprobado && pendingP2.length > 0) {
                             childrenElements.push(new docx.Paragraph({
                                 text: "Segundo Periodo",
@@ -411,7 +412,7 @@
                             });
                         }
 
-                        // Tercer Periodo
+                        // Tercer Periodo (Tareas que comienzan con 3.)
                         if (p3Reprobado && pendingP3.length > 0) {
                             childrenElements.push(new docx.Paragraph({
                                 text: "Tercer Periodo",
