@@ -3,114 +3,527 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planes de Mejoramiento - Tecnología e Informática</title>
+  <title>Planes de Mejoramiento - Tecnología e Informática | Colegio Tibabuyes Universal</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- SheetJS para procesamiento de Excel / CSV -->
+  <!-- SheetJS para lectura de Excel / CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   
-  <!-- docx.js (Cargado directamente en window.docx) -->
+  <!-- docx.js para generación de archivos Word -->
   <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
   
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-gradient {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
 
-  <!-- Header -->
-  <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 text-white shadow-md">
-    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+  <!-- Header Institucional -->
+  <header class="custom-gradient text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Colegio Tibabuyes Universal</h1>
-        <p class="text-blue-200 text-sm font-medium mt-1">Sede B — Jornada Tarde | Área: Tecnología e Informática</p>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="p-3 bg-white/10 rounded-xl backdrop-blur-md">
+            <i class="fa-solid fa-graduation-cap text-2xl text-blue-200"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Colegio Tibabuyes Universal</h1>
+            <p class="text-blue-100 text-sm font-medium">Sede B — Jornada Tarde | Área: Tecnología e Informática</p>
+          </div>
+        </div>
       </div>
-      <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20 text-xs text-blue-100 font-medium">
-        Docente: <span class="font-bold text-white">Néstor Ricardo Fajardo</span>
+      <div class="bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/20 text-sm text-blue-100 font-medium flex items-center gap-2">
+        <i class="fa-solid fa-chalkboard-user text-blue-300"></i>
+        <span>Docente: <strong class="text-white">Néstor Ricardo Fajardo</strong></span>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="max-w-4xl mx-auto w-full px-6 py-10 flex-grow">
+  <!-- Contenido Principal -->
+  <main class="max-w-4xl mx-auto w-full px-4 py-8 flex-grow">
     
-    <!-- Title Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-8 mb-8">
-      <div class="flex items-center gap-3 mb-3 text-blue-800">
-        <i data-lucide="file-text" class="w-8 h-8"></i>
-        <h2 class="text-2xl font-bold text-slate-900">Generador de Planes de Mejoramiento</h2>
-      </div>
+    <!-- Tarjeta de Presentación -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+      <h2 class="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-file-shield text-blue-600"></i> Generador de Planes de Mejoramiento
+      </h2>
       <p class="text-slate-600 text-sm leading-relaxed">
-        Adjunta el archivo Excel o CSV con el reporte de notas del curso. La herramienta clasificará automáticamente las actividades pendientes en su periodo correspondiente según su numeración (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">1.x</code> para 1.er Periodo, <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">2.x</code> para 2.º Periodo y <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">3.x</code> para 3.er Periodo) y generará un documento en formato Word (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800 font-mono text-xs">.docx</code>) único y consolidado.
+        Adjunta el archivo Excel o CSV con las notas del curso. La aplicación filtrará automáticamente a los estudiantes reprobados por periodo (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">&lt; 33 puntos</code>) o con actividades pendientes (<code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-700 font-semibold">nota 0 o vacía</code>) y generará un único documento Word consolidado con los planes de mejoramiento de todo el curso.
       </p>
     </div>
 
-    <!-- Controls Form -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-8 space-y-6">
+    <!-- Formulario / Panel de Control -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
       
-      <!-- Date input -->
+      <!-- Fecha de Entrega -->
       <div>
-        <label for="deliveryDate" class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
-          Fecha de presentación y entrega:
+        <label for="deliveryDate" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+          <i class="fa-regular fa-calendar-days text-blue-600 mr-1"></i> Fecha de presentación y entrega:
         </label>
         <div class="relative max-w-xs">
           <input 
             type="date" 
             id="deliveryDate" 
-            class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 outline-none transition"
+            class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3.5 outline-none transition font-medium"
           >
         </div>
       </div>
 
-      <!-- File Dropzone -->
+      <!-- Zona de Carga de Archivo (Drag & Drop interactivo) -->
       <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
-          Archivo de calificaciones (.xlsx, .xls, .csv):
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+          <i class="fa-solid fa-file-excel text-emerald-600 mr-1"></i> Archivo de calificaciones (.xlsx, .xls, .csv):
         </label>
-        <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/50 hover:bg-blue-50/30 rounded-2xl p-8 text-center transition cursor-pointer group">
-          <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="hidden">
-          <div class="flex flex-col items-center justify-center space-y-3">
-            <div class="p-3 bg-blue-100 text-blue-700 rounded-full group-hover:scale-110 transition">
-              <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+        
+        <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/50 hover:bg-blue-50/20 rounded-2xl p-8 text-center transition cursor-pointer group relative">
+          <!-- Input oculto pero totalmente funcional -->
+          <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+          
+          <div class="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+            <div class="p-4 bg-blue-100 text-blue-700 rounded-full group-hover:scale-110 transition shadow-sm">
+              <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
             </div>
             <div>
-              <p class="text-sm font-semibold text-slate-700 group-hover:text-blue-800">
+              <p class="text-sm font-bold text-slate-700 group-hover:text-blue-800">
                 Haz clic para seleccionar o arrastra el archivo aquí
               </p>
-              <p class="text-xs text-slate-400 mt-1">Soporta hojas de cálculo descargadas directamente de la plataforma</p>
+              <p class="text-xs text-slate-400 mt-1">Soporta formatos Excel (.xlsx, .xls) y CSV</p>
             </div>
-            <div id="fileNameDisplay" class="hidden mt-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
-              <i data-lucide="file-check" class="w-4 h-4"></i>
+            
+            <div id="fileNameDisplay" class="hidden mt-3 text-xs font-semibold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200 inline-flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>
               <span id="fileNameText"></span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Action Button -->
+      <!-- Botón de Acción -->
       <button 
         id="btnGenerate" 
-        class="w-full bg-blue-700 hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-base"
+        class="w-full bg-blue-700 hover:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition shadow-md hover:shadow-lg flex items-center justify-center gap-3 text-base"
         disabled
       >
-        <i data-lucide="file-output" class="w-5 h-5"></i>
-        <span>Generar Documento de Planes de Mejoramiento (.docx)</span>
+        <i class="fa-solid fa-file-word text-xl"></i>
+        <span>Generar Documento Único de Planes de Mejoramiento (.docx)</span>
       </button>
 
-      <!-- Feedback Area -->
-      <div id="statusMessage" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+      <!-- Mensaje de Estado / Feedback -->
+      <div id="statusMessage" class="hidden p-4 rounded-xl text-sm font-semibold flex items-center gap-3"></div>
 
     </div>
 
-    <!-- Instructions Summary -->
-    <div class="mt-8 bg-blue-50/60 border border-blue-100 rounded-2xl p-6 text-xs text-slate-600 space-y-2">
-      <h4 class="font-bold text-blue-900 text-sm mb-1 flex items-center gap-1.5">
-        <i data-lucide="info" class="w-4 h-
+    <!-- Notas Informativas -->
+    <div class="mt-6 bg-blue-50/60 border border-blue-100 rounded-2xl p-6 text-xs text-slate-600 space-y-2">
+      <h4 class="font-bold text-blue-900 text-sm mb-1.5 flex items-center gap-2">
+        <i class="fa-solid fa-circle-info text-blue-700"></i> Criterios del sistema:
+      </h4>
+      <p>• <strong>Asignación por Periodo:</strong> Las actividades se clasifican automáticamente según su numeración inicial (<code class="font-bold">1.x</code> = Periodo 1, <code class="font-bold">2.x</code> = Periodo 2, <code class="font-bold">3.x</code> = Periodo 3).</p>
+      <p>• <strong>Condición de Reprobación:</strong> Aplica cuando la definitiva del periodo es menor a 33 puntos o cuando la tarea aparece con nota cero o vacía.</p>
+      <p>• <strong>Plataforma Institucional:</strong> Cada plan de mejoramiento incluirá la instrucción de ingreso a <code class="font-bold text-blue-800">tecnotic.milaulas.com</code>.</p>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800">
+    <p>Colegio Tibabuyes Universal Sede B — Jornada Tarde</p>
+    <p class="mt-1 text-slate-500">Área de Tecnología e Informática | Docente Néstor Ricardo Fajardo</p>
+  </footer>
+
+  <script>
+    // Fecha actual por defecto
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('deliveryDate').value = today;
+
+    const excelFileInput = document.getElementById('excelFile');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const fileNameText = document.getElementById('fileNameText');
+    const btnGenerate = document.getElementById('btnGenerate');
+    const statusMessage = document.getElementById('statusMessage');
+
+    let loadedWorkbook = null;
+
+    excelFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      fileNameText.textContent = file.name;
+      fileNameDisplay.classList.remove('hidden');
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          loadedWorkbook = XLSX.read(data, { type: 'array' });
+          btnGenerate.disabled = false;
+          showStatus('Archivo cargado correctamente. Listo para procesar.', 'success');
+        } catch (err) {
+          showStatus('Error al leer el archivo. Compruebe que sea un Excel válido.', 'error');
+          btnGenerate.disabled = true;
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function showStatus(msg, type) {
+      statusMessage.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200', 'bg-rose-50', 'text-rose-800', 'border-rose-200', 'bg-amber-50', 'text-amber-800', 'border-amber-200');
+      if (type === 'success') {
+        statusMessage.className = 'p-4 rounded-xl text-sm font-semibold flex items-center gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200';
+        statusMessage.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i><span>${msg}</span>`;
+      } else if (type === 'error') {
+        statusMessage.className = 'p-4 rounded-xl text-sm font-semibold flex items-center gap-3 bg-rose-50 text-rose-800 border border-rose-200';
+        statusMessage.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-600 text-lg"></i><span>${msg}</span>`;
+      } else {
+        statusMessage.className = 'p-4 rounded-xl text-sm font-semibold flex items-center gap-3 bg-amber-50 text-amber-800 border border-amber-200';
+        statusMessage.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg"></i><span>${msg}</span>`;
+      }
+    }
+
+    // Limpieza de Título de Tarea (Remueve "(Real)" y espacios residuales)
+    function cleanTaskTitle(title) {
+      if (!title) return '';
+      return title
+        .replace(/\(Real\)/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Extracción limpia del Nombre del Estudiante (Remueve número de lista, curso y años)
+    function cleanStudentName(rawName) {
+      if (!rawName) return '';
+      let clean = String(rawName).trim();
+      
+      // Remover números ordinales/lista iniciales (ej: "26 Yenderli", "1 - Carlos")
+      clean = clean.replace(/^\d+[\.\s\-\)]*/, '');
+      
+      // Remover años (2024, 2025, 2026, etc.)
+      clean = clean.replace(/20\d\d/g, '');
+
+      // Remover menciones de curso o grado (ej: "602", "901")
+      clean = clean.replace(/\b(curso|grado)?\s*\d{3,4}\b/gi, '');
+
+      return clean.replace(/\s+/g, ' ').trim();
+    }
+
+    // Extracción del Nombre del Curso
+    function extractCourse(rawName) {
+      if (!rawName) return '602';
+      const match = String(rawName).match(/\b(\d{3})\b/);
+      return match ? match[1] : '602';
+    }
+
+    // Determinar si una nota está vacía o es 0
+    function isPendingGrade(val) {
+      if (val === null || val === undefined) return true;
+      const strVal = String(val).trim();
+      if (strVal === '' || strVal === '-' || strVal === '0') return true;
+      const numVal = parseFloat(strVal);
+      return isNaN(numVal) || numVal === 0;
+    }
+
+    // Generar documento Word
+    btnGenerate.addEventListener('click', async () => {
+      if (!loadedWorkbook) return;
+
+      const deliveryDate = document.getElementById('deliveryDate').value || today;
+      const sheetName = loadedWorkbook.SheetNames[0];
+      const sheet = loadedWorkbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+      if (jsonData.length < 2) {
+        showStatus('El archivo adjunto no contiene filas de datos válidas.', 'error');
+        return;
+      }
+
+      const headers = jsonData[0].map(h => String(h).trim());
+      const rows = jsonData.slice(1);
+
+      let colNombreIdx = headers.findIndex(h => /nombre/i.test(h));
+      let colApellidoIdx = headers.findIndex(h => /apellido/i.test(h));
+
+      if (colNombreIdx === -1) colNombreIdx = 0;
+      if (colApellidoIdx === -1) colApellidoIdx = 1;
+
+      // Clasificar tareas y definitivas por periodo
+      const periodTasks = { 1: [], 2: [], 3: [] };
+      const periodDefinitivas = { 1: -1, 2: -1, 3: -1 };
+
+      headers.forEach((header, index) => {
+        if (index === colNombreIdx || index === colApellidoIdx) return;
+        const cleanHeader = cleanTaskTitle(header);
+
+        if (/definitiva/i.test(cleanHeader)) {
+          if (/^1[\.\s]/i.test(cleanHeader) || /primer/i.test(cleanHeader)) periodDefinitivas[1] = index;
+          else if (/^2[\.\s]/i.test(cleanHeader) || /segund/i.test(cleanHeader)) periodDefinitivas[2] = index;
+          else if (/^3[\.\s]/i.test(cleanHeader) || /tercer/i.test(cleanHeader)) periodDefinitivas[3] = index;
+          return;
+        }
+
+        if (/^1[\.\s]/.test(cleanHeader)) {
+          periodTasks[1].push({ index, title: cleanHeader });
+        } else if (/^2[\.\s]/.test(cleanHeader)) {
+          periodTasks[2].push({ index, title: cleanHeader });
+        } else if (/^3[\.\s]/.test(cleanHeader)) {
+          periodTasks[3].push({ index, title: cleanHeader });
+        }
+      });
+
+      const studentsData = [];
+
+      rows.forEach(row => {
+        const rawNombre = row[colNombreIdx];
+        const rawApellido = row[colApellidoIdx];
+
+        if (!rawNombre && !rawApellido) return;
+
+        const nombreLimpio = cleanStudentName(rawNombre);
+        const apellidosLimpios = String(rawApellido || '').trim();
+        const curso = extractCourse(rawNombre);
+
+        if (!nombreLimpio && !apellidosLimpios) return;
+
+        // Periodo 1
+        let defP1 = null;
+        if (periodDefinitivas[1] !== -1 && row[periodDefinitivas[1]] !== undefined) {
+          defP1 = parseFloat(row[periodDefinitivas[1]]);
+        }
+        const pendingP1 = [];
+        if (defP1 === null || isNaN(defP1) || defP1 < 33) {
+          periodTasks[1].forEach(t => {
+            if (isPendingGrade(row[t.index])) pendingP1.push(t.title);
+          });
+        }
+
+        // Periodo 2
+        let defP2 = null;
+        if (periodDefinitivas[2] !== -1 && row[periodDefinitivas[2]] !== undefined) {
+          defP2 = parseFloat(row[periodDefinitivas[2]]);
+        }
+        const pendingP2 = [];
+        if (defP2 === null || isNaN(defP2) || defP2 < 33) {
+          periodTasks[2].forEach(t => {
+            if (isPendingGrade(row[t.index])) pendingP2.push(t.title);
+          });
+        }
+
+        // Periodo 3
+        let defP3 = null;
+        if (periodDefinitivas[3] !== -1 && row[periodDefinitivas[3]] !== undefined) {
+          defP3 = parseFloat(row[periodDefinitivas[3]]);
+        }
+        const pendingP3 = [];
+        if (defP3 === null || isNaN(defP3) || defP3 < 33) {
+          periodTasks[3].forEach(t => {
+            if (isPendingGrade(row[t.index])) pendingP3.push(t.title);
+          });
+        }
+
+        const totalPending = pendingP1.length + pendingP2.length + pendingP3.length;
+
+        if (totalPending > 0) {
+          studentsData.push({
+            curso,
+            nombre: nombreLimpio,
+            apellidos: apellidosLimpios,
+            pendingP1,
+            pendingP2,
+            pendingP3
+          });
+        }
+      });
+
+      if (studentsData.length === 0) {
+        showStatus('No se encontraron estudiantes reprobados ni con tareas pendientes en el archivo.', 'warning');
+        return;
+      }
+
+      // Construcción del documento Word
+      try {
+        const docxLib = window.docx;
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak } = docxLib;
+
+        const docChildren = [];
+
+        studentsData.forEach((st, idx) => {
+          docChildren.push(
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              children: [
+                new TextRun({ text: "PLAN DE MEJORAMIENTO", bold: true, size: 28, color: "1E3A8A" })
+              ],
+              spaceAfter: 200
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Nombre del colegio: ", bold: true }),
+                new TextRun({ text: "Colegio Tibabuyes Universal, Sede B, Jornada Tarde" })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Área: ", bold: true }),
+                new TextRun({ text: "Tecnología e informática" })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Curso: ", bold: true }),
+                new TextRun({ text: st.curso })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Nombre: ", bold: true }),
+                new TextRun({ text: st.nombre })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Apellidos: ", bold: true }),
+                new TextRun({ text: st.apellidos })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Actividades pendientes: ", bold: true }),
+                new TextRun({ text: "Sí" })
+              ]
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Fecha de presentación y entrega: ", bold: true }),
+                new TextRun({ text: deliveryDate })
+              ],
+              spaceAfter: 120
+            }),
+            // Instrucción de plataforma obligatoria
+            new Paragraph({
+              children: [
+                new TextRun({ 
+                  text: "El estudiante debe ingresar a la plataforma tecnotic.milaulas.com, acceder con su usuario y contraseña y desarrollar cada una de las actividades indicadas.",
+                  italic: true,
+                  size: 20
+                })
+              ],
+              spaceAfter: 300
+            })
+          );
+
+          if (st.pendingP1.length > 0) {
+            docChildren.push(
+              new Paragraph({
+                text: "Primer Periodo",
+                heading: HeadingLevel.HEADING_2,
+                spaceBefore: 200,
+                spaceAfter: 100
+              })
+            );
+            st.pendingP1.forEach(task => {
+              docChildren.push(
+                new Paragraph({
+                  text: `• ${task}`,
+                  bullet: { level: 0 },
+                  spaceAfter: 50
+                })
+              );
+            });
+          }
+
+          if (st.pendingP2.length > 0) {
+            docChildren.push(
+              new Paragraph({
+                text: "Segundo Periodo",
+                heading: HeadingLevel.HEADING_2,
+                spaceBefore: 200,
+                spaceAfter: 100
+              })
+            );
+            st.pendingP2.forEach(task => {
+              docChildren.push(
+                new Paragraph({
+                  text: `• ${task}`,
+                  bullet: { level: 0 },
+                  spaceAfter: 50
+                })
+              );
+            });
+          }
+
+          if (st.pendingP3.length > 0) {
+            docChildren.push(
+              new Paragraph({
+                text: "Tercer Periodo",
+                heading: HeadingLevel.HEADING_2,
+                spaceBefore: 200,
+                spaceAfter: 100
+              })
+            );
+            st.pendingP3.forEach(task => {
+              docChildren.push(
+                new Paragraph({
+                  text: `• ${task}`,
+                  bullet: { level: 0 },
+                  spaceAfter: 50
+                })
+              );
+            });
+          }
+
+          docChildren.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Docente: ", bold: true }),
+                new TextRun({ text: "Néstor Ricardo Fajardo" })
+              ],
+              spaceBefore: 400,
+              spaceAfter: 300
+            })
+          );
+
+          if (idx < studentsData.length - 1) {
+            docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+          }
+        });
+
+        const doc = new Document({
+          sections: [{ properties: {}, children: docChildren }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const wordBlob = new Blob([blob], { 
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+        });
+
+        const courseName = studentsData[0]?.curso || 'Curso';
+        const fileName = `Planes_de_Mejoramiento_Tecnologia_${courseName}.docx`;
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(wordBlob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+
+        showStatus(`¡Éxito! Se generó el documento Word para ${studentsData.length} estudiantes.`, 'success');
+
+      } catch (err) {
+        console.error(err);
+        showStatus('Error al generar el documento Word: ' + err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>
