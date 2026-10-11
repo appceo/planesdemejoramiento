@@ -367,6 +367,12 @@
                                     new docx.TextRun({ text: "Fecha de presentación y entrega: ", bold: true }),
                                     new docx.TextRun(fechaEntrega)
                                 ],
+                                spacing: { after: 100 }
+                            }),
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun("El estudiante debe ingresar a la plataforma tecnotic.milaulas.com, acceder con su usuario y contraseña y desarrollar cada una de las actividades indicadas")
+                                ],
                                 spacing: { after: 300 }
                             })
                         ];
