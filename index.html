@@ -235,12 +235,15 @@
                     return title.replace(/\(Real\)/gi, "").replace(/\s+/g, " ").trim();
                 };
 
-                // Función para extraer curso y nombre limpio del campo nombre
+                // Función para extraer curso, año y nombre limpio del campo nombre
                 const parseStudentNameAndCourse = (rawName) => {
                     if (!rawName) return { curso: "No especificado", nombreLimpio: "" };
                     let str = rawName.toString().trim();
                     let curso = "No especificado";
                     let nombreLimpio = str;
+
+                    // Quitar años lectivos comunes (ej. 2024, 2025, 2026) si están presentes
+                    str = str.replace(/\b(202[4-6])\b/g, "").trim();
 
                     // Patrones comunes de cursos (ej: 601, 602, 701, 601-Jornada, etc.)
                     const courseMatch = str.match(/^([0-9]{3,4})\s*[-–]?\s*(.*)$/);
@@ -255,6 +258,8 @@
                             curso = altMatch[2];
                         }
                     }
+                    // Limpieza final de espacios dobles
+                    nombreLimpio = nombreLimpio.replace(/\s+/g, " ").trim();
                     return { curso, nombreLimpio };
                 };
 
