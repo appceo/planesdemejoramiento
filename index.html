@@ -242,10 +242,8 @@
                     let curso = "No especificado";
                     let nombreLimpio = str;
 
-                    // Quitar años lectivos comunes (ej. 2024, 2025, 2026) si están presentes
-                    str = str.replace(/\b(202[4-6])\b/g, "").trim();
-
-                    // Patrones comunes de cursos (ej: 601, 602, 701, 601-Jornada, etc.)
+                    // Patrón común en listas (ej: "602 26 Yenderli Valentina" o "601 - 5 Juan")
+                    // Extraer curso inicial de 3 o 4 dígitos
                     const courseMatch = str.match(/^([0-9]{3,4})\s*[-–]?\s*(.*)$/);
                     if (courseMatch) {
                         curso = courseMatch[1];
@@ -258,6 +256,11 @@
                             curso = altMatch[2];
                         }
                     }
+
+                    // Remover número de lista o año inicial que haya quedado remanente (ej. número de orden "26 " o años "2024", "2025", "2026")
+                    // Se remueve cualquier número al inicio que sea un número de lista o año (1 a 3 dígitos o 202X) seguido de espacios
+                    nombreLimpio = nombreLimpio.replace(/^(?:[0-9]{1,3}|202[4-6])\s+/, "").trim();
+
                     // Limpieza final de espacios dobles
                     nombreLimpio = nombreLimpio.replace(/\s+/g, " ").trim();
                     return { curso, nombreLimpio };
